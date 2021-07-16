@@ -92,6 +92,7 @@ app.get(`/`, async function(request, res) {
         });
     }).catch(function(error){
         console.log(error)
+        res.send("Enter valid Code")
     });
   });
 });
