@@ -5,10 +5,10 @@ const express = require('express');
 const path = require("path");
 const fs = require('fs');
 const mysql = require('mysql');
-const key = fs.readFileSync('./key.pem');
-const cert = fs.readFileSync('./cert.pem');
-const CryptoJS = require("crypto-js");
-const https = require('https');
+// const key = fs.readFileSync('./key.pem');
+// const cert = fs.readFileSync('./cert.pem');
+//const CryptoJS = require("crypto-js");
+//const https = require('https');
 const updateToken = require('./functions/updateToken');
 const resolveText = require('./functions/resolve_text');
 const updateVehicle = require('./functions/update_vehicle');
@@ -38,63 +38,64 @@ var pool  = mysql.createPool({
 });
 
 // Create https server
-const server = https.createServer({key: key, cert: cert }, app);
-app.get(`/loc`, async function(request, res) {
-  t = await location()
-  console.log(t)
-});
-
+//const server = https.createServer({key: key, cert: cert }, app);
 
 // Verification code for creating campaign ****
 app.get(`/`, async function(request, res) {
-  var cre_data;
-  var query = pool.query(`select * from env_var where clientId = "30990062-9618-40e1-a27b-7c6bcb23658a";`);
-  query
-  .on('error', function(err) {
-    console.log(error)
-  })
-  .on('result', async function(row) {
-    cre_data = row;
-    console.log("Reading Env variables!")
-  })
-  .on('end', async function() {
-    var url = `https://dah2vb2cprod.b2clogin.com/914d88b1-3523-4bf6-9be4-1b96b4f6f919/oauth2/v2.0/token?p=${cre_data.policy}`
-    var bytes  = CryptoJS.AES.decrypt(cre_data.clientSecret, process.env.KEY);
-    var secret = bytes.toString(CryptoJS.enc.Utf8);   
-    axios.post(url, querystring.stringify({
-        grant_type:"authorization_code",
-        client_id:cre_data.clientId,
-        client_secret:secret,
-        code:request.query.code,
-        redirect_uri:cre_data.clientSecret.redirectUri
-      }), {
-      headers: { 
-        "Content-Type": "application/x-www-form-urlencoded"
-      }
-    }).then(function(response) {
-        console.log("Generated Token Success!")
-        var enToken = CryptoJS.AES.encrypt(`${response.data.access_token}`, process.env.KEY).toString();      
-        var reToken = CryptoJS.AES.encrypt(`${response.data.refresh_token}`, process.env.KEY).toString();      
-        var query = pool.query(`update env_var SET accessToken = "${enToken}", refreshToken = "${reToken}";`);
-        query
-        .on('error', function(err) {
-            console.log(err)
-        })
-        .on('result', async function(row) {
-          console.log("Encrypted and updated the Access Token!")
-        })
-        .on('end', async function() {
-          updateVehicle();
-          location();
-          status();
-          updateToken();
-          res.render("index")
-        });
-    }).catch(function(error){
-        console.log(error)
-        res.send("Enter valid Code")
+  if (request.query && request.query.code){
+    var cre_data;
+    var query = pool.query(`select * from env_var where clientId = "30990062-9618-40e1-a27b-7c6bcb23658a";`);
+    query
+    .on('error', function(err) {
+      console.log(error)
+    })
+    .on('result', async function(row) {
+      cre_data = row;
+      console.log("Reading Env variables!")
+    })
+    .on('end', async function() {
+      var url = `https://dah2vb2cprod.b2clogin.com/914d88b1-3523-4bf6-9be4-1b96b4f6f919/oauth2/v2.0/token?p=${cre_data.policy}`
+      // var bytes  = CryptoJS.AES.decrypt(cre_data.clientSecret, process.env.KEY);
+      // var secret = bytes.toString(CryptoJS.enc.Utf8);  
+      var secret = "T_Wk41dx2U9v22R5sQD4Z_E1u-l2B-jXHE" 
+      axios.post(url, querystring.stringify({
+          grant_type:"authorization_code",
+          client_id:cre_data.clientId,
+          client_secret:secret,
+          code:request.query.code,
+          redirect_uri:cre_data.clientSecret.redirectUri
+        }), {
+        headers: { 
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      }).then(function(response) {
+          console.log("Generated Token Success!")
+          console.log(response)
+          // var enToken = CryptoJS.AES.encrypt(`${response.data.access_token}`, process.env.KEY).toString();      
+          // var reToken = CryptoJS.AES.encrypt(`${response.data.refresh_token}`, process.env.KEY).toString();      
+          var query = pool.query(`update env_var SET accessToken = "${response.data.access_token}", refreshToken = "${response.data.refresh_token}";`);
+          query
+          .on('error', function(err) {
+              console.log(err)
+          })
+          .on('result', async function(row) {
+            console.log("Encrypted and updated the Access Token!")
+          })
+          .on('end', async function() {
+            updateVehicle();
+            location();
+            status();
+            updateToken();
+            res.render("index")
+          });
+      }).catch(function(error){
+          console.log(error)
+          res.send("Enter valid Code")
+      });
     });
-  });
+  } else {
+    res.send("Enter valid Code")
+  }
 });
 
 // Verification code for creating campaign ****
@@ -143,7 +144,7 @@ app.post(`/data`, async function(request, response) {
 //Function to load the data
 //loadData();
 function loadData(){
-  var enSecret = CryptoJS.AES.encrypt(`T_Wk41dx2U9v22R5sQD4Z_E1u-l2B-jXHE`, process.env.KEY).toString();
+  //var enSecret = CryptoJS.AES.encrypt(`T_Wk41dx2U9v22R5sQD4Z_E1u-l2B-jXHE`, process.env.KEY).toString();
   var step1 = mysql.createConnection({
       host     : process.env.dbHOST,
       user     : process.env.dbUSER,
@@ -186,5 +187,5 @@ function sleep(ms) {
 }
 
   // listen for webhook events
-server.listen(process.env.PORT || 3000, () => console.log('webhook is listening'));
+app.listen(process.env.PORT || 3000, () => console.log('webhook is listening'));
 

@@ -1,5 +1,5 @@
 const mysql = require('mysql');
-const CryptoJS = require("crypto-js");
+//const CryptoJS = require("crypto-js");
 const axios = require ("axios");
 var querystring = require('querystring');
 
@@ -27,8 +27,8 @@ module.exports = async () => {
         .on('end', async function() {
             //console.log(cre_data)
 
-            var bytes  = CryptoJS.AES.decrypt(cre_data.accessToken, process.env.KEY);
-            var acToken = bytes.toString(CryptoJS.enc.Utf8); 
+            // var bytes  = CryptoJS.AES.decrypt(cre_data.accessToken, process.env.KEY);
+            // var acToken = bytes.toString(CryptoJS.enc.Utf8); 
             var url = `https://api.mps.ford.com/api/fordconnect/vehicles/v1/${cre_data.vehicleId}/unlock`
             await axios.post(url,"", {
                 headers: { 
@@ -37,7 +37,7 @@ module.exports = async () => {
                   "Accept-Encoding":"gzip, deflate, br",
                   "Connection":"keep-alive",
                   "Application-Id":cre_data.applicationId,
-                  "Authorization": `Bearer ${acToken}`,
+                  "Authorization": `Bearer ${cre_data.accessToken}`,
                   "api-version": cre_data.api_version
                 }
             }).then(function(response) {

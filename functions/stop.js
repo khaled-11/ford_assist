@@ -1,5 +1,5 @@
 const mysql = require('mysql');
-const CryptoJS = require("crypto-js");
+//const CryptoJS = require("crypto-js");
 const axios = require ("axios");
 var querystring = require('querystring');
 
@@ -37,7 +37,7 @@ module.exports = async () => {
                   "Accept-Encoding":"gzip, deflate, br",
                   "Connection":"keep-alive",
                   "Application-Id":cre_data.applicationId,
-                  "Authorization": `Bearer ${acToken}`,
+                  "Authorization": `Bearer ${cre_data.accessToken}`,
                   "api-version": cre_data.api_version
                 }
             }).then(function(response) {
